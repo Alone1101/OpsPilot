@@ -1,8 +1,9 @@
 from fastapi import FastAPI, HTTPException
-from models import Order, OrderStatus, CancelOrderResponse, ToolRequest, ToolResponse
+from models import Order, OrderStatus, CancelOrderResponse, ToolRequest, ToolResponse, AgentRequest
 from services.order_service import get_order_by_id, cancel_order
 from tools.registry import execute_tool
 from exceptions import OpsPilotError, OrderNotFoundError, InvalidOrderActionError
+from agents.agent_service import process_message
 
 app = FastAPI()
 
@@ -70,7 +71,30 @@ def agent_tool(request: ToolRequest):
     try:
         result = execute_tool(orders = orders, tool_name = request.tool, arguments = request.arguments)
 
-        return ToolResponse(success = True, tool = request.tool, result = result.model_dump())
+        return ToolResponse(
+            success = True,
+            tool = request.tool,
+            result = result.model_dump()
+        )
 
     except OpsPilotError as error:
-        return ToolResponse(success = False, tool = request.tool, error = str(error))
+        return ToolResponse(
+            success = False,
+            tool = request.tool,
+            error = str(error)
+        )
+
+@app.post("/agent/message", response_model = ToolResponse)
+def agent_message(request: AgentRequest):
+    try:
+        return process_message(
+            message = request.message,
+            orders = orders
+        )
+
+    except OpsPilotError as error:
+        return ToolResponse(
+            success = False,
+            tool = "unknown",
+            error = str(error)
+        )

@@ -28,3 +28,10 @@ class ToolResponse(BaseModel):
     tool: str
     result: dict[str, Any] | None = None
     error: str | None = None
+
+class AgentDecision(BaseModel):
+    tool: str
+    order_id: str
+
+class AgentRequest(BaseModel):
+    message: str
