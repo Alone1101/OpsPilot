@@ -32,6 +32,23 @@ class ToolResponse(BaseModel):
 class AgentDecision(BaseModel):
     tool: str
     order_id: str
+    amount: float | None = None
 
 class AgentRequest(BaseModel):
+    message: str
+
+class TrackingResponse(BaseModel):
+    order_id: str
+    status: str
+    message: str
+
+class RefundEligibilityResponse(BaseModel):
+    order_id: str
+    eligible: bool
+    reason: str
+
+class RefundResponse(BaseModel):
+    order_id: str
+    amount: float
+    status: str
     message: str

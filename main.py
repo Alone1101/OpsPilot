@@ -78,15 +78,7 @@ def agent_tool(request: ToolRequest, db: Session = Depends(get_db)):
 
 @app.post("/agent/message", response_model = ToolResponse)
 def agent_message(request: AgentRequest, db: Session = Depends(get_db)):
-    try:
-        return process_message(
-            message = request.message,
-            db = db
-        )
-
-    except OpsPilotError as error:
-        return ToolResponse(
-            success = False,
-            tool = "unknown",
-            error = str(error)
-        )
+    return process_message(
+        message = request.message,
+        db = db
+    )

@@ -1,7 +1,6 @@
-from sqlalchemy import Float, String
+from sqlalchemy import Float, String, Integer, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 from database import Base
-
 
 class OrderDB(Base):
     __tablename__ = "orders"
@@ -24,4 +23,29 @@ class OrderDB(Base):
     total_amount: Mapped[float] = mapped_column(
         Float,
         nullable = False,
+    )
+
+class RefundDB(Base):
+    __tablename__ = "refunds"
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key = True,
+        autoincrement = True
+    )
+
+    order_id: Mapped[str] = mapped_column(
+        String,
+        ForeignKey("orders.id"),
+        nullable = False
+    )
+
+    amount: Mapped[float] = mapped_column(
+        Float,
+        nullable = False
+    )
+
+    status: Mapped[str] = mapped_column(
+        String,
+        nullable = False
     )

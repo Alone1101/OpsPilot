@@ -19,9 +19,24 @@ def decide_tool(message: str) -> AgentDecision:
 
             get_order
             - Retrieve information about an order.
+            - Requires: order_id
 
             cancel_order
             - Request cancellation of an order.
+            - Requires: order_id
+
+            get_tracking_status
+            - Check the current shipment/order status.
+            - Requires: order_id
+
+            check_refund_eligibility
+            - Check whether an order is currently eligible for a refund.
+            - Requires: order_id
+
+            issue_refund
+            - Issue a refund for an eligible order.
+            - Requires: order_id, amount
+            - Refunds above Rm250 require human escalation.
 
             Select one appropriate tool based on the user's request and extract the order ID.
             Do not invent tools.
