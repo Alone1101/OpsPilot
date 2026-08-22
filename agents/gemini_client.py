@@ -38,6 +38,12 @@ def decide_tool(message: str) -> AgentDecision:
             - Requires: order_id, amount
             - Refunds above Rm250 require human escalation.
 
+            escalate_case
+            - Escalate an order issue for human review.
+            - Use when autonomous action is unsafe or not permitted.
+            - Requires: order_id, reason
+            - Optional: priority
+
             Select one appropriate tool based on the user's request and extract the order ID.
             Do not invent tools.
             """,
@@ -47,10 +53,3 @@ def decide_tool(message: str) -> AgentDecision:
     )
 
     return response.parsed
-
-if __name__ == "__main__":
-    decision = decide_tool(
-        "Please cancel my order NC-1003"
-    )
-
-    print(decision)

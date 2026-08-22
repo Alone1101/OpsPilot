@@ -13,6 +13,12 @@ def process_message(message: str, db: Session) -> ToolResponse:
     if decision.amount is not None:
         arguments["amount"] = decision.amount
 
+    if decision.reason is not None:
+        arguments["reason"] = decision.reason
+
+    if decision.priority is not None:
+        arguments["priority"] = decision.priority
+
     try:
         result = execute_tool(
             db = db,

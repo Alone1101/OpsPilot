@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from models import Order, OrderStatus, CancelOrderResponse, TrackingResponse, RefundEligibilityResponse, RefundResponse
-from services.order_service import get_order_by_id, cancel_order, get_tracking_status, check_refund_eligibility, issue_refund
+from models import Order, OrderStatus, CancelOrderResponse, TrackingResponse, RefundEligibilityResponse, RefundResponse, EscalationResponse
+from services.order_service import get_order_by_id, cancel_order, get_tracking_status, check_refund_eligibility, issue_refund, escalate_case
 
 def get_order_tool(db: Session, order_id: str) -> Order:
     order = get_order_by_id(
@@ -38,4 +38,12 @@ def issue_refund_tool(db: Session, order_id: str, amount: float) -> RefundRespon
         db = db,
         order_id = order_id,
         amount = amount
+    )
+
+def escalate_case_tool(db: Session, order_id: str, reason: str, priority: str = 'HIGH') -> EscalationResponse:
+    return escalate_case(
+        db = db,
+        order_id = order_id,
+        reason = reason,
+        priority = priority
     )

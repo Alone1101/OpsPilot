@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from models import OrderStatus, CancelOrderResponse, TrackingResponse, RefundEligibilityResponse, RefundResponse
-from db_models import OrderDB, RefundDB
+from models import OrderStatus, CancelOrderResponse, TrackingResponse, RefundEligibilityResponse, RefundResponse, EscalationResponse
+from db_models import OrderDB, RefundDB, EscalationDB
 from exceptions import OrderNotFoundError, InvalidOrderActionError
 
 
@@ -100,7 +100,7 @@ def check_refund_eligibility(db: Session, order_id: str) -> RefundEligibilityRes
                 reason = "Order is not currently eligible for refund."
             )
 
-def issue_refund(db: Session, order_id: str, amount: float) -> RefundResponse:
+def issue_refund(db: Session, order_id: str, amount: float) -> RefundResponse | EscalationResponse:
     order = get_order_by_id(
         db = db,
         order_id = order_id
@@ -113,7 +113,12 @@ def issue_refund(db: Session, order_id: str, amount: float) -> RefundResponse:
         raise InvalidOrderActionError("Refund amount cannot exceed order total.")
 
     if amount > 250:
-        raise InvalidOrderActionError("Refund excceds RM250 autonomous limit and requires human escalation.")
+        return escalate_case(
+            db = db,
+            order_id = order_id,
+            reason = f"Refund request of RM{amount:.2f} exceeds autonomous limit",
+            priority = "HIGH"
+        )
 
     eligibility = check_refund_eligibility(
         db = db,
@@ -145,4 +150,29 @@ def issue_refund(db: Session, order_id: str, amount: float) -> RefundResponse:
         amount = refund.amount,
         status = refund.status,
         message = "Refund approved successfully"
+    )
+
+def escalate_case(db: Session, order_id: str, reason: str, priority: str = 'HIGH') -> EscalationResponse:
+    get_order_by_id(
+        db = db,
+        order_id = order_id
+    )
+
+    escalation = EscalationDB(
+        order_id = order_id,
+        reason = reason,
+        priority = priority,
+        status = "PENDING"
+    )
+
+    db.add(escalation)
+    db.commit()
+    db.refresh(escalation)
+
+    return EscalationResponse(
+        case_id = escalation.id,
+        order_id = escalation.order_id,
+        reason = escalation.reason,
+        priority = escalation.priority,
+        status = escalation.status
     )

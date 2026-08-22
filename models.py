@@ -33,6 +33,8 @@ class AgentDecision(BaseModel):
     tool: str
     order_id: str
     amount: float | None = None
+    reason: str | None = None
+    priority: str | None = None
 
 class AgentRequest(BaseModel):
     message: str
@@ -52,3 +54,10 @@ class RefundResponse(BaseModel):
     amount: float
     status: str
     message: str
+
+class EscalationResponse(BaseModel):
+    case_id: int
+    order_id: str
+    reason: str
+    priority: str
+    status: str
