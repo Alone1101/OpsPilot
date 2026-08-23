@@ -61,3 +61,26 @@ class EscalationResponse(BaseModel):
     reason: str
     priority: str
     status: str
+
+class PolicyQuestionRequest(BaseModel):
+    question: str
+
+class PolicyAnswerResponse(BaseModel):
+    answer: str
+
+class RequestType(str, Enum):
+    ACTION = "ACTION"
+    POLICY_QUESTION = "POLICY_QUESTION"
+
+class RequestClassification(BaseModel):
+    requestType: RequestType
+
+class PolicyAgentResponse(BaseModel):
+    type: str = "policy_answer"
+    answer: str
+
+class ToolAgentResponse(BaseModel):
+    type: str = "tool_result"
+    tool: str
+    result: dict[str, Any] | None = None
+    error: str | None = None

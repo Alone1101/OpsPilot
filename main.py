@@ -1,7 +1,8 @@
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
-from models import Order, OrderStatus, CancelOrderResponse, ToolRequest, ToolResponse, AgentRequest
+from models import Order, OrderStatus, CancelOrderResponse, ToolRequest, ToolResponse, AgentRequest, PolicyQuestionRequest, PolicyAnswerResponse, PolicyAgentResponse, ToolAgentResponse
 from services.order_service import get_order_by_id, cancel_order
+from services.rag_service import answer_policy_question
 from tools.registry import execute_tool
 from exceptions import OpsPilotError, OrderNotFoundError, InvalidOrderActionError
 from agents.agent_service import process_message
@@ -76,9 +77,18 @@ def agent_tool(request: ToolRequest, db: Session = Depends(get_db)):
             error = str(error)
         )
 
-@app.post("/agent/message", response_model = ToolResponse)
+@app.post("/agent/message", response_model = PolicyAgentResponse | ToolAgentResponse)
 def agent_message(request: AgentRequest, db: Session = Depends(get_db)):
     return process_message(
         message = request.message,
         db = db
     )
+
+@app.post("/policy/ask", response_model = PolicyAnswerResponse)
+def ask_policy(request: PolicyQuestionRequest, db: Session = Depends(get_db)):
+    answer = answer_policy_question(
+        db = db,
+        question = request.question
+    )
+
+    return PolicyAnswerResponse(answer = answer)
