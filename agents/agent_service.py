@@ -1,51 +1,18 @@
 from sqlalchemy.orm import Session
-from models import RequestType, PolicyAgentResponse, ToolAgentResponse 
-from services.rag_service import answer_policy_question
-from tools.registry import execute_tool
-from exceptions import OpsPilotError
-from agents.gemini_client import decide_tool, classify_request
+from models import PolicyAgentResponse, ToolAgentResponse 
+from agents.graph import build_agent_graph
 
 
 def process_message(message: str, db: Session) -> PolicyAgentResponse | ToolAgentResponse:
-    classification = classify_request(message)
+    graph = build_agent_graph(db)
 
-    if classification.requestType == RequestType.POLICY_QUESTION:
-        answer = answer_policy_question(
-            db = db,
-            question = message
-        )
+    state = graph.invoke({"message": message})
 
-        return PolicyAgentResponse(
-            answer = answer
-        )
-    
-    decision = decide_tool(message)
+    if "answer" in state:
+        return PolicyAgentResponse(answer = state["answer"])
 
-    arguments = {"order_id": decision.order_id}
-
-    if decision.amount is not None:
-        arguments["amount"] = decision.amount
-
-    if decision.reason is not None:
-        arguments["reason"] = decision.reason
-
-    if decision.priority is not None:
-        arguments["priority"] = decision.priority
-
-    try:
-        result = execute_tool(
-            db = db,
-            tool_name = decision.tool,
-            arguments = arguments
-        )
-
-        return ToolAgentResponse(
-            tool = decision.tool,
-            result = result.model_dump()
-        )
-
-    except OpsPilotError as error:
-        return ToolAgentResponse(
-            tool = decision.tool,
-            error = str(error)
-        )
+    return ToolAgentResponse(
+        tool = state["tool"],
+        result = state.get("result"),
+        error = state.get("error")
+    )

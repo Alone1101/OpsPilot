@@ -73,7 +73,7 @@ class RequestType(str, Enum):
     POLICY_QUESTION = "POLICY_QUESTION"
 
 class RequestClassification(BaseModel):
-    requestType: RequestType
+    request_type: RequestType
 
 class PolicyAgentResponse(BaseModel):
     type: str = "policy_answer"
