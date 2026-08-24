@@ -13,40 +13,60 @@ def decide_tool(message: str) -> AgentDecision:
         contents = message,
         config = types.GenerateContentConfig(
             system_instruction = """
-            You are the decision component of OpsPilot, an AI customer support system.
-
-            Available tools:
-
-            get_order
-            - Retrieve information about an order.
-            - Requires: order_id
-
-            cancel_order
-            - Request cancellation of an order.
-            - Requires: order_id
-
-            get_tracking_status
-            - Check the current shipment/order status.
-            - Requires: order_id
-
-            check_refund_eligibility
-            - Check whether an order is currently eligible for a refund.
-            - Requires: order_id
-
-            issue_refund
-            - Issue a refund for an eligible order.
-            - Requires: order_id, amount
-            - Refunds above Rm250 require human escalation.
-
-            escalate_case
-            - Escalate an order issue for human review.
-            - Use when autonomous action is unsafe or not permitted.
-            - Requires: order_id, reason
-            - Optional: priority
-
-            Select one appropriate tool based on the user's request and extract the order ID.
-            Do not invent tools.
-            """,
+            You are the decision component of OpsPilot.
+            
+                Available tools:
+            
+                get_order
+                - Retrieve general order details such as customer, total amount, or current record.
+                - Use only when the user asks for general order information.
+                - Requires: order_id
+            
+                get_tracking_status
+                - Use when the user asks where an order is, whether it has shipped, delivery progress, transit state, or shipment status.
+                - Requires: order_id
+            
+                cancel_order
+                - Use when the user explicitly asks to cancel or stop an order.
+                - Requires: order_id
+            
+                check_refund_eligibility
+                - Use when the user asks whether a specific order can receive a refund.
+                - Do not use issue_refund unless the user actually asks to perform the refund.
+                - Requires: order_id
+            
+                issue_refund
+                - Use when the user explicitly asks to issue, process, or give a refund.
+                - Requires: order_id, amount
+            
+                escalate_case
+                - Use when the user explicitly asks for human review/escalation.
+                - Requires: order_id
+                - reason and priority may be provided when available.
+            
+                Do not invent tools.
+            
+                Return ONLY valid JSON.
+            
+                Format:
+            
+                {{
+                "tool": "tool_name",
+                "order_id": "NC-1001",
+                "amount": null,
+                "reason": null,
+                "priority": null
+                }}
+            
+                Rules:
+                - Amount must be a JSON number only.
+                - Do not include currency symbols or text in amount.
+                - Example: RM50 must be returned as 50.0.
+                - Use null when amount is not provided.
+            
+                User request:
+                {message}
+                """,
 
             response_mime_type = "application/json",
             response_schema = AgentDecision
@@ -61,15 +81,31 @@ def classify_request(message: str) -> RequestClassification:
         contents = message,
         config = types.GenerateContentConfig(
             system_instruction = """
-            Classify the user request
-
+            Classify the following customer request.
+            
             ACTION:
-            The user wants OpsPolit to perform or attempt an operation, such as cancelling, refunding, tracking, checking eligibility, or escalating a case.
-
+            The request concerns a specific customer order or case and requires retrieving current state or performing/attempting an operation.
+            If the message contains a specific order ID and asks about that order's status, tracking, cancellation, refund eligibility, refund execution, or escalation, classify it as ACTION.
+        
             POLICY_QUESTION:
-            The user is asking about company policy, rules, or what is allowed.
+            The request asks about general company policy, rules, limits, or what is allowed, without requiring lookup of a specific customer's current order state.
+        
+            Examples:
+            - "Can I get a refund for order NC-1003?" -> ACTION
+            - "Is NC-1003 eligible for a refund?" -> ACTION
+            - "What is your refund policy?" -> POLICY_QUESTION
+            - "Are refunds above RM250 allowed automatically?" -> POLICY_QUESTION
 
-            Return only the classification.
+            Return ONLY valid JSON in this exact format:
+            
+            {{"request_type": "ACTION"}}
+        
+            Allowed request_type values:
+            - ACTION
+            - POLICY_QUESTION
+        
+            Request:
+            {message}
             """,
 
             response_mime_type = "application/json",

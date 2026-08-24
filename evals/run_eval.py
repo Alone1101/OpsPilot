@@ -1,11 +1,20 @@
+import sys
 from database import SessionLocal
 from agents.graph import build_agent_graph
-from evals.cases import EVAL_CASES
+from evals.dev_cases import DEV_CASES
+from evals.test_cases import TEST_CASES
 
 def run_eval():
+    mode =sys.argv[1] if len(sys.argv) > 1 else "dev"
+
+    if mode == "test":
+        cases = TEST_CASES
+    else:
+        cases = DEV_CASES
+    
     db = SessionLocal()
 
-    total = len(EVAL_CASES)
+    total = len(cases)
 
     request_type_correct = 0
     tool_correct = 0
@@ -15,7 +24,7 @@ def run_eval():
     try:
         graph = build_agent_graph(db)
 
-        for case in EVAL_CASES:
+        for case in cases:
             state = graph.invoke({"message": case["message"]})
 
             actual_request_type = state.get("request_type")
@@ -36,6 +45,17 @@ def run_eval():
 
             amount_ok = actual_amount == expected_amount
 
+            request_type_correct += int(request_type_ok)
+            tool_correct += int(tool_ok)
+            order_id_correct += int(order_id_ok)
+            amount_correct += int(amount_ok)
+
+            print(f"\n{case['message']}")
+            print(f"  Request type: {request_type_ok}")
+            print(f"  Tool:         {tool_ok}")
+            print(f"  Order ID:     {order_id_ok}")
+            print(f"  Amount:       {amount_ok}")
+
             if not request_type_ok:
                 print(f"  Expected request type: {case['expected_request_type']}")
                 print(f"  Actual request type:   {actual_request_type}")
@@ -47,17 +67,6 @@ def run_eval():
             if not order_id_ok:
                 print(f"  Expected order ID: {case.get('expected_order_id')}")
                 print(f"  Actual order ID:   {actual_order_id}")
-
-            request_type_correct += int(request_type_ok)
-            tool_correct += int(tool_ok)
-            order_id_correct += int(order_id_ok)
-            amount_correct += int(amount_ok)
-
-            print(f"\n{case['message']}")
-            print(f"  Request type: {request_type_ok}")
-            print(f"  Tool:         {tool_ok}")
-            print(f"  Order ID:     {order_id_ok}")
-            print(f"  Amount:       {amount_ok}")
 
         print("\n--- RESULTS ---")
 

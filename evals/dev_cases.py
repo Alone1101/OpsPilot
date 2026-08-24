@@ -1,4 +1,4 @@
-EVAL_CASES = [
+DEV_CASES = [
     # --- Tracking ---
     {
         "message": "Track order NC-1002",
