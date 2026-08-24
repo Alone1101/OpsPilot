@@ -40,7 +40,7 @@ def issue_refund_tool(db: Session, order_id: str, amount: float) -> RefundRespon
         amount = amount
     )
 
-def escalate_case_tool(db: Session, order_id: str, reason: str, priority: str = 'HIGH') -> EscalationResponse:
+def escalate_case_tool(db: Session, order_id: str, reason: str = 'Humman review requested', priority: str = 'HIGH') -> EscalationResponse:
     return escalate_case(
         db = db,
         order_id = order_id,

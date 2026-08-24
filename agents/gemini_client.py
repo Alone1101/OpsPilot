@@ -78,3 +78,11 @@ def classify_request(message: str) -> RequestClassification:
     )
 
     return response.parsed
+
+def generate_text(prompt: str) -> str:
+    response = client.models.generate_content(
+        model = "gemini-3.6-flash",
+        contents = prompt
+    )
+
+    return response.text

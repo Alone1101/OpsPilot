@@ -5,7 +5,7 @@ from models import RequestType
 from services.rag_service import answer_policy_question
 from tools.registry import execute_tool
 from exceptions import OpsPilotError
-from agents.gemini_client import decide_tool, classify_request
+from services.llm_service import decide_tool, classify_request
 
 class AgentState(TypedDict, total = False):
     message: str

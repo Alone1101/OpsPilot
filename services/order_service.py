@@ -152,7 +152,7 @@ def issue_refund(db: Session, order_id: str, amount: float) -> RefundResponse | 
         message = "Refund approved successfully"
     )
 
-def escalate_case(db: Session, order_id: str, reason: str, priority: str = 'HIGH') -> EscalationResponse:
+def escalate_case(db: Session, order_id: str, reason: str = 'Human review requested', priority: str = 'HIGH') -> EscalationResponse:
     get_order_by_id(
         db = db,
         order_id = order_id

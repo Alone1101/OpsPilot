@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from google import genai
 from sqlalchemy.orm import Session
 from services.retrieval_service import retrieve_policies
+from services.llm_service import generate_text
 
 load_dotenv()
 
@@ -31,9 +32,4 @@ def answer_policy_question(db: Session, question: str) -> str:
     {question}
     """
 
-    response = client.models.generate_content(
-        model = "gemini-3.6-flash",
-        contents = prompt
-    )
-
-    return response.text
+    return generate_text(prompt)
