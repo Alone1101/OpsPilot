@@ -1,4 +1,6 @@
 import sys
+import time
+import statistics
 from database import SessionLocal
 from agents.graph import build_agent_graph
 from evals.dev_cases import DEV_CASES
@@ -21,11 +23,22 @@ def run_eval():
     order_id_correct = 0
     amount_correct = 0
 
+    latencies = []
+
     try:
         graph = build_agent_graph(db)
 
+        # Warm up LLM so model loading time is not included in benchmark latency
+        graph.invoke({"message": "Track order NC-1002"})
+
         for case in cases:
+
+            start = time.perf_counter()
+
             state = graph.invoke({"message": case["message"]})
+
+            latency = time.perf_counter() - start
+            latencies.append(latency)
 
             actual_request_type = state.get("request_type")
             actual_tool = state.get("tool")
@@ -55,6 +68,7 @@ def run_eval():
             print(f"  Tool:         {tool_ok}")
             print(f"  Order ID:     {order_id_ok}")
             print(f"  Amount:       {amount_ok}")
+            print(f"  Latency:      {latency:.2f}s")
 
             if not request_type_ok:
                 print(f"  Expected request type: {case['expected_request_type']}")
@@ -93,6 +107,13 @@ def run_eval():
             f"{amount_correct}/{total} "
             f"({amount_correct / total:.1%})"
         )
+
+        mean_latency = sum(latencies) / len(latencies)
+        median_latency = statistics.median(latencies)
+
+        print(f"Mean latency: {mean_latency:.2f}s")
+
+        print(f"Median latency: {median_latency:.2f}s")
 
     finally:
         db.close()
