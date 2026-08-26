@@ -4,7 +4,7 @@ from langgraph.graph import StateGraph, START, END
 from models import RequestType
 from services.rag_service import answer_policy_question
 from tools.registry import execute_tool
-from exceptions import OpsPilotError
+from exceptions import OpsPilotError, EscalationRequiredError
 from services.llm_service import decide_tool, classify_request
 
 class AgentState(TypedDict, total = False):
@@ -73,10 +73,22 @@ def build_agent_graph(db: Session):
                 arguments = state["arguments"]
             )
 
-            return{"result": result.model_dump()}
+            return {
+                "result": result.model_dump(),
+                "requires_escalation": False
+            }
+
+        except EscalationRequiredError as error:
+            return {
+                "requires_escalation": True,
+                "error": str(error)
+            }
 
         except OpsPilotError as error:
-            return{"error": str(error)}
+            return {
+                "requires_escalation": False,
+                "error": str(error)
+            }
 
     def escalate_node(state: AgentState):
         result = execute_tool(
@@ -90,8 +102,9 @@ def build_agent_graph(db: Session):
         )
 
         return {
+            "tool": "escalate_case",
             "result": result.model_dump(),
-            "tool": "escalate_case"
+            "error": None
         }
 
     graph = StateGraph(AgentState)

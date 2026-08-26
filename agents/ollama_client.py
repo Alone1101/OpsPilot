@@ -1,8 +1,10 @@
 import os
 import json
 import requests
+from pydantic import ValidationError
 from dotenv import load_dotenv
 from models import RequestClassification, AgentDecision
+from exceptions import LLMUnavailableError, LLMResponseError
 
 load_dotenv()
 
@@ -10,21 +12,29 @@ OLLAMA_URL = os.getenv("OLLAMA_URL")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL")
 
 def _generate(prompt: str) -> str:
-    response = requests.post(
-        f"{OLLAMA_URL}/api/generate",
-        json = {
-            "model": OLLAMA_MODEL,
-            "prompt": prompt,
-            "stream": False,
-            "options": {"temperature": 0}
-        },
-        timeout = 120
-    )
+    try:
+        response = requests.post(
+            f"{OLLAMA_URL}/api/generate",
+            json = {
+                "model": OLLAMA_MODEL,
+                "prompt": prompt,
+                "stream": False,
+                "options": {"temperature": 0}
+            },
+            timeout = 120
+        )
 
-    response.raise_for_status()
+        response.raise_for_status()
 
-    data = response.json()
-    return data["response"]
+    except requests.RequestException as error:
+        raise LLMUnavailableError(f"Ollama request failed: {error}")
+
+    try:
+        data = response.json()
+        return data["response"]
+
+    except (ValueError, KeyError) as error:
+        raise LLMResponseError("Ollama returned an invalid response") from error
 
 def classify_request(message: str) -> RequestClassification:
     prompt = f"""
@@ -56,9 +66,14 @@ def classify_request(message: str) -> RequestClassification:
     """
 
     raw = _generate(prompt)
-    data = json.loads(raw)
 
-    return RequestClassification(**data)
+    try:
+        data = json.loads(raw)
+
+        return RequestClassification(**data)
+
+    except (json.JSONDecodeError, ValidationError) as error:
+        raise LLMResponseError("Invalid classification response from Ollama") from error
 
 def decide_tool(message: str) -> AgentDecision:
     prompt = f"""

@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from models import OrderStatus, CancelOrderResponse, TrackingResponse, RefundEligibilityResponse, RefundResponse, EscalationResponse
 from db_models import OrderDB, RefundDB, EscalationDB
-from exceptions import OrderNotFoundError, InvalidOrderActionError
+from exceptions import OrderNotFoundError, InvalidOrderActionError, EscalationRequiredError
 
 
 def get_order_by_id(db: Session, order_id: str) -> OrderDB:
@@ -113,12 +113,7 @@ def issue_refund(db: Session, order_id: str, amount: float) -> RefundResponse | 
         raise InvalidOrderActionError("Refund amount cannot exceed order total.")
 
     if amount > 250:
-        return escalate_case(
-            db = db,
-            order_id = order_id,
-            reason = f"Refund request of RM{amount:.2f} exceeds autonomous limit",
-            priority = "HIGH"
-        )
+        raise EscalationRequiredError(f"Refund request of RM{amount:.2f} exceeds autonomous limit")
 
     eligibility = check_refund_eligibility(
         db = db,

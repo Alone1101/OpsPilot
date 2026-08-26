@@ -105,3 +105,38 @@ Cases: 8
    cancellation_policy.md
 
    The query overlaps cancellation and refund policy concepts. The expected refund policy still appeared within the top 3 results.
+
+## Robustness Evaluation
+Cases: 5
+
+| Scenario | Result |
+|---|---:|
+| Nonexistent order | Passed |
+| Invalid cancellation state | Passed |
+| Missing refund amount | Passed |
+| Duplicate refund | Passed |
+| Re-cancelling cancelled order | Passed |
+
+Overall robustness handling: **5/5 (100.0%)**
+
+## End-to-End Workflow Evaluation
+Cases: 2
+
+| Workflow | Expected Outcome | Result |
+|---|---|---:|
+| Processing-order cancellation | Order status transitions to `CANCELLED` | Passed |
+| High-value refund escalation | Refund above RM250 routes to `escalate_case` and creates a `PENDING` escalation | Passed |
+
+Overall end-to-end workflow success: **2/2 (100.0%)**
+
+### High-Value Refund Escalation
+
+The initial end-to-end evaluation exposed an orchestration issue in which a refund above the RM250 autonomous limit selected `issue_refund` but did not transition through the LangGraph escalation path.
+
+The workflow was revised so that the refund service signals that human review is required, allowing LangGraph to route execution to `escalate_case`.
+
+The resulting workflow is:
+
+`issue_refund` → escalation required → LangGraph conditional routing → `escalate_case` → `PENDING` human-review case
+
+After the fix, both evaluated end-to-end workflows passed.
