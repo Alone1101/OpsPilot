@@ -1,3 +1,4 @@
+import logging
 from typing import TypedDict, Any
 from sqlalchemy.orm import Session
 from langgraph.graph import StateGraph, START, END
@@ -6,6 +7,8 @@ from services.rag_service import answer_policy_question
 from tools.registry import execute_tool
 from exceptions import OpsPilotError, EscalationRequiredError
 from services.llm_service import decide_tool, classify_request
+
+logger = logging.getLogger(__name__)
 
 class AgentState(TypedDict, total = False):
     message: str
@@ -16,15 +19,20 @@ class AgentState(TypedDict, total = False):
     answer: str
     error: str
     requires_escalation: bool
+    request_id: str
 
 # Supporting functions
 def classify_node(state: AgentState):
     classification = classify_request(state["message"])
 
+    logger.info("[%s] Request classified as %s", state["request_id"], classification.request_type.value)
+
     return {"request_type": classification.request_type}
 
 def decide_action_node(state: AgentState):
     decision = decide_tool(state["message"])
+
+    logger.info("[%s] Tool selected: %s for order %s", state["request_id"], decision.tool, decision.order_id)
 
     arguments = {"order_id": decision.order_id}
 
@@ -66,6 +74,8 @@ def build_agent_graph(db: Session):
         return{"answer": answer}
 
     def execute_action_node(state: AgentState):
+        logger.info("[%s] Executing tool: %s", state["request_id"], state["tool"])
+
         try:
             result = execute_tool(
                 db = db,
@@ -79,18 +89,24 @@ def build_agent_graph(db: Session):
             }
 
         except EscalationRequiredError as error:
+            logger.warning("Workflow requires escalation: %s", error)
+
             return {
                 "requires_escalation": True,
                 "error": str(error)
             }
 
         except OpsPilotError as error:
+            logger.warning("Tool execution failed: %s", error)
+
             return {
                 "requires_escalation": False,
                 "error": str(error)
             }
 
     def escalate_node(state: AgentState):
+        logger.warning("Workflow escalated for order %s", state["arguments"]["order_id"])
+
         result = execute_tool(
             db = db,
             tool_name = "escalate_case",

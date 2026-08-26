@@ -1,6 +1,7 @@
 import os
 import json
 import requests
+import logging
 from pydantic import ValidationError
 from dotenv import load_dotenv
 from models import RequestClassification, AgentDecision
@@ -8,10 +9,14 @@ from exceptions import LLMUnavailableError, LLMResponseError
 
 load_dotenv()
 
+logger = logging.getLogger(__name__)
+
 OLLAMA_URL = os.getenv("OLLAMA_URL")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL")
 
 def _generate(prompt: str) -> str:
+    logger.info("Using Ollama model: %s", OLLAMA_MODEL)
+
     try:
         response = requests.post(
             f"{OLLAMA_URL}/api/generate",

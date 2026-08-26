@@ -7,6 +7,9 @@ from tools.registry import execute_tool
 from exceptions import OpsPilotError, OrderNotFoundError, InvalidOrderActionError
 from agents.agent_service import process_message
 from database import get_db
+from logging_config import configure_logging
+
+configure_logging()
 
 app = FastAPI()
 

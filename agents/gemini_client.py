@@ -1,3 +1,5 @@
+import os
+import logging
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
@@ -5,11 +7,15 @@ from models import AgentDecision, RequestClassification
 
 load_dotenv()
 
+logger = logging.getLogger(__name__)
+
+GEMINI_MODEL = os.getenv("GEMINI_MODEL")
+
 client = genai.Client()
 
 def decide_tool(message: str) -> AgentDecision:
     response = client.models.generate_content(
-        model = "gemini-3.6-flash",
+        model = GEMINI_MODEL,
         contents = message,
         config = types.GenerateContentConfig(
             system_instruction = """
@@ -77,7 +83,7 @@ def decide_tool(message: str) -> AgentDecision:
 
 def classify_request(message: str) -> RequestClassification:
     response = client.models.generate_content(
-        model = "gemini-3.6-flash",
+        model = GEMINI_MODEL,
         contents = message,
         config = types.GenerateContentConfig(
             system_instruction = """
@@ -116,6 +122,8 @@ def classify_request(message: str) -> RequestClassification:
     return response.parsed
 
 def generate_text(prompt: str) -> str:
+    logger.info("Using Gemini model: %s", GEMINI_MODEL)
+
     response = client.models.generate_content(
         model = "gemini-3.6-flash",
         contents = prompt
