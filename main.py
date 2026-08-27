@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from models import Order, OrderStatus, CancelOrderResponse, ToolRequest, ToolResponse, AgentRequest, PolicyQuestionRequest, PolicyAnswerResponse, PolicyAgentResponse, ToolAgentResponse
 from services.order_service import get_order_by_id, cancel_order
@@ -95,3 +96,5 @@ def ask_policy(request: PolicyQuestionRequest, db: Session = Depends(get_db)):
     )
 
     return PolicyAnswerResponse(answer = answer)
+
+app.mount("/ui", StaticFiles(directory = "static", html = True), name = "static")
