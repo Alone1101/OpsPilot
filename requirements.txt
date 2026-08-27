@@ -13,3 +13,5 @@ google-genai==2.18.1
 requests==2.34.2
 
 langgraph==1.2.11
+
+mcp[cli]

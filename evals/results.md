@@ -140,3 +140,15 @@ The resulting workflow is:
 `issue_refund` → escalation required → LangGraph conditional routing → `escalate_case` → `PENDING` human-review case
 
 After the fix, both evaluated end-to-end workflows passed.
+
+## MCP Interoperability
+
+OpsPilot exposes selected read-only operations through an MCP Streamable HTTP server.
+
+Validated:
+- MCP session initialization
+- Dynamic tool discovery
+- Remote `get_order` invocation
+- Remote `get_tracking_status` invocation
+- PostgreSQL-backed tool execution
+- Successful structured responses through MCP
